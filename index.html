@@ -4,6 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Team Card</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="PokeDex">
+<meta name="theme-color" content="#0A0B0F">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -111,7 +116,9 @@
   .track{display:flex; height:100%; transition:transform .35s ease;}
   .card{
     flex:0 0 100%; height:100%; display:flex; flex-direction:column;
-    padding:18px 16px 14px; overflow-y:auto;
+    padding:18px 16px calc(130px + env(safe-area-inset-bottom));
+    overflow-y:auto;
+    -webkit-overflow-scrolling:touch;
   }
 
   .top-row{display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;}
@@ -166,7 +173,7 @@
   #controls{
     position:fixed; left:0; right:0; bottom:0; z-index:41;
     display:none; flex-direction:column; align-items:center; gap:10px;
-    padding:10px 16px 16px; background:linear-gradient(180deg, transparent, var(--void) 40%);
+    padding:10px 16px calc(16px + env(safe-area-inset-bottom)); background:linear-gradient(180deg, transparent, var(--void) 40%);
   }
   #controls.show{display:flex;}
   .dots{display:flex; gap:6px;}
