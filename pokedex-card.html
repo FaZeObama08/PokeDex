@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Team Card</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --void:#0A0B0F;
+    --panel:#14161C;
+    --panel-line:#22252D;
+    --text:#EDEEF2;
+    --muted:#8A8F9C;
+    --gold:#D4AF6A;
+    --foil-a:#7C6CFF;
+    --foil-b:#4CD3C2;
+    --foil-c:#FFB84C;
+    --t-fire:#E08D5A; --t-flying:#9FB3E8; --t-grass:#7CB86F; --t-ghost:#7B6BA8;
+    --t-fighting:#C9776B; --t-steel:#ADB4BE; --t-dark:#6B6B78; --t-fairy:#D99BC0;
+    --t-water:#6FA3C9; --t-normal:#B7B6A8; --t-electric:#D6C368; --t-psychic:#D97DA0;
+    --t-ice:#8FD0D6; --t-dragon:#8E7DE0; --t-bug:#A3BE5C; --t-rock:#BFA46A;
+    --t-ground:#C9A876; --t-poison:#B07DC4;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{height:100%;}
+  body{
+    margin:0;
+    background:
+      radial-gradient(ellipse 900px 500px at 15% -10%, rgba(124,108,255,0.08), transparent 60%),
+      radial-gradient(ellipse 700px 500px at 100% 0%, rgba(76,211,194,0.06), transparent 55%),
+      var(--void);
+    color:var(--text);
+    font-family:'IBM Plex Mono', monospace;
+    overflow:hidden;
+  }
+
+  /* ---------------- POKEBALL OVERLAY ---------------- */
+  #pbOverlay{
+    position:fixed; inset:0; z-index:50;
+    display:flex; align-items:center; justify-content:center;
+    background:var(--void);
+    transition:opacity .5s ease, visibility .5s ease;
+  }
+  #pbOverlay.hidden{opacity:0; visibility:hidden; pointer-events:none;}
+  .flash{
+    position:absolute; inset:0; background:#fff; opacity:0; pointer-events:none;
+  }
+  .flash.go{animation:flashPop .5s ease-out forwards;}
+  @keyframes flashPop{0%{opacity:0;} 30%{opacity:.9;} 100%{opacity:0;}}
+
+  .pb-wrap{position:relative; width:120px; height:120px;}
+  .pokeball{
+    position:relative; width:100%; height:100%;
+    animation:pbIdle 2.2s ease-in-out infinite;
+  }
+  .pokeball.shaking{animation:pbShake 0.5s ease-in-out infinite;}
+  .pokeball.release{animation:pbPop .5s ease forwards;}
+  @keyframes pbIdle{0%,100%{transform:translateY(0);} 50%{transform:translateY(-6px);}}
+  @keyframes pbShake{0%,100%{transform:rotate(0deg);} 25%{transform:rotate(-9deg);} 75%{transform:rotate(9deg);}}
+  @keyframes pbPop{0%{transform:scale(1); opacity:1;} 60%{transform:scale(1.15); opacity:1;} 100%{transform:scale(1.5); opacity:0;}}
+
+  .pb-top{position:absolute; top:0; left:0; width:100%; height:50%; background:linear-gradient(180deg,#E5544A,#B23A32); border-radius:120px 120px 0 0; border:4px solid #0A0B0F;}
+  .pb-bottom{position:absolute; bottom:0; left:0; width:100%; height:50%; background:linear-gradient(180deg,#F2F2F2,#CFCFCF); border-radius:0 0 120px 120px; border:4px solid #0A0B0F;}
+  .pb-band{position:absolute; top:calc(50% - 6px); left:0; width:100%; height:12px; background:#0A0B0F;}
+  .pb-button{position:absolute; top:50%; left:50%; width:34px; height:34px; margin:-17px 0 0 -17px; border-radius:50%; background:#0A0B0F; display:flex; align-items:center; justify-content:center;}
+  .pb-button-inner{width:18px; height:18px; border-radius:50%; background:#F2F2F2; box-shadow:inset 0 0 0 3px #CFCFCF;}
+
+  .pb-label{
+    position:absolute; bottom:-42px; left:50%; transform:translateX(-50%);
+    font-family:'Chakra Petch', sans-serif; font-size:11px; letter-spacing:0.14em;
+    color:var(--muted); text-transform:uppercase; white-space:nowrap;
+  }
+  .pb-error{
+    position:absolute; top:calc(100% + 60px); left:50%; transform:translateX(-50%);
+    width:280px; text-align:center; font-size:12px; color:var(--muted); line-height:1.6; display:none;
+  }
+  .pb-error.show{display:block;}
+  .pb-error button{
+    margin-top:12px; background:var(--panel); color:var(--text); border:1px solid var(--panel-line);
+    padding:8px 14px; border-radius:6px; font-family:'Chakra Petch',sans-serif; font-size:11px;
+    letter-spacing:0.08em; text-transform:uppercase; cursor:pointer;
+  }
+
+  /* ---------------- MANUAL PASTE LANDING ---------------- */
+  #landing{
+    position:fixed; inset:0; z-index:40; display:none;
+    flex-direction:column; align-items:center; justify-content:center; gap:18px;
+    padding:24px; text-align:center;
+  }
+  #landing.show{display:flex;}
+  #landing h2{font-family:'Chakra Petch',sans-serif; font-size:18px; letter-spacing:0.04em; margin:0;}
+  #landing p{color:var(--muted); font-size:12px; max-width:280px; line-height:1.6; margin:0;}
+  #pasteInput{
+    width:100%; max-width:340px; height:140px; background:var(--panel); color:var(--text);
+    border:1px solid var(--panel-line); border-radius:8px; padding:10px; font-family:'IBM Plex Mono',monospace;
+    font-size:11px; resize:none;
+  }
+  #openBtn{
+    background:var(--panel); border:1px solid var(--gold); color:var(--gold);
+    font-family:'Chakra Petch',sans-serif; letter-spacing:0.1em; text-transform:uppercase;
+    font-size:12px; padding:10px 20px; border-radius:8px; cursor:pointer;
+  }
+
+  /* ---------------- CARD VIEWER ---------------- */
+  #viewer{position:fixed; inset:0; opacity:0; transition:opacity .5s ease; pointer-events:none;}
+  #viewer.show{opacity:1; pointer-events:auto;}
+
+  .track{display:flex; height:100%; transition:transform .35s ease;}
+  .card{
+    flex:0 0 100%; height:100%; display:flex; flex-direction:column;
+    padding:18px 16px 14px; overflow-y:auto;
+  }
+
+  .top-row{display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;}
+  .slot-pill{font-family:'Chakra Petch',sans-serif; font-size:10px; letter-spacing:0.12em; color:var(--muted);}
+  .shiny-pill{font-family:'Chakra Petch',sans-serif; font-size:10px; letter-spacing:0.06em; color:var(--foil-c);}
+
+  .sprite-stage{
+    position:relative; height:32vh; min-height:170px; display:flex; align-items:center; justify-content:center;
+    background:radial-gradient(ellipse at center, #171A22 0%, #0E0F13 75%);
+    border-radius:14px; border:1px solid var(--panel-line); overflow:hidden; margin-bottom:14px;
+  }
+  .sprite-stage .foil{
+    position:absolute; inset:0;
+    background:linear-gradient(115deg, transparent 15%, rgba(124,108,255,0.30) 32%, rgba(76,211,194,0.28) 50%, rgba(255,184,76,0.28) 68%, transparent 85%);
+    background-size:260% 260%; animation:drift 7s ease-in-out infinite; mix-blend-mode:screen;
+  }
+  @keyframes drift{0%,100%{background-position:0% 40%;} 50%{background-position:100% 60%;}}
+  .sprite-stage img{
+    position:relative; z-index:2; width:56%; max-width:190px; object-fit:contain;
+    filter:drop-shadow(0 10px 18px rgba(0,0,0,0.55));
+    animation:bob 2.1s ease-in-out infinite, popIn .5s ease;
+  }
+  @keyframes bob{0%,100%{transform:translateY(0) scale(1);} 50%{transform:translateY(-8px) scale(1.015);}}
+  @keyframes popIn{0%{transform:scale(0.4); opacity:0;} 100%{transform:scale(1); opacity:1;}}
+  @media (prefers-reduced-motion:reduce){ .sprite-stage img, .sprite-stage .foil{animation:none;} }
+
+  h1.mon-name{font-family:'Chakra Petch',sans-serif; font-size:22px; margin:0 0 2px; letter-spacing:0.01em;}
+  .nickname{color:var(--muted); font-size:11px; margin:0 0 8px;}
+  .types{display:flex; gap:6px; margin-bottom:12px;}
+  .type{font-size:10px; letter-spacing:0.05em; padding:3px 9px; border-radius:20px; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08);}
+  .type.fire{color:var(--t-fire);} .type.flying{color:var(--t-flying);} .type.grass{color:var(--t-grass);}
+  .type.ghost{color:var(--t-ghost);} .type.fighting{color:var(--t-fighting);} .type.steel{color:var(--t-steel);}
+  .type.dark{color:var(--t-dark);} .type.fairy{color:var(--t-fairy);} .type.water{color:var(--t-water);}
+  .type.normal{color:var(--t-normal);} .type.electric{color:var(--t-electric);} .type.psychic{color:var(--t-psychic);}
+  .type.ice{color:var(--t-ice);} .type.dragon{color:var(--t-dragon);} .type.bug{color:var(--t-bug);}
+  .type.rock{color:var(--t-rock);} .type.ground{color:var(--t-ground);} .type.poison{color:var(--t-poison);}
+
+  .meta-row{display:flex; flex-wrap:wrap; gap:8px 16px; font-size:11px; color:var(--muted); margin-bottom:14px;}
+  .meta-row b{color:var(--text); font-weight:500;}
+
+  .stat-line{display:grid; grid-template-columns:34px 1fr 30px; align-items:center; gap:8px; font-size:10.5px; margin-bottom:5px;}
+  .stat-line .bar-bg{height:6px; background:var(--panel-line); border-radius:4px; overflow:hidden;}
+  .stat-line .bar-fill{height:100%; background:linear-gradient(90deg, var(--foil-a), var(--foil-b)); border-radius:4px;}
+  .stat-label{color:var(--muted); letter-spacing:0.04em;}
+  .stat-val{text-align:right; color:var(--text);}
+
+  .moves-title{font-family:'Chakra Petch',sans-serif; font-size:10px; letter-spacing:0.14em; color:var(--muted); text-transform:uppercase; margin:14px 0 6px;}
+  .moves-grid{display:grid; grid-template-columns:1fr 1fr; gap:6px;}
+  .move-chip{background:var(--panel); border:1px solid var(--panel-line); border-radius:6px; padding:6px 8px; font-size:11px;}
+
+  /* ---------------- BOTTOM CONTROLS ---------------- */
+  #controls{
+    position:fixed; left:0; right:0; bottom:0; z-index:41;
+    display:none; flex-direction:column; align-items:center; gap:10px;
+    padding:10px 16px 16px; background:linear-gradient(180deg, transparent, var(--void) 40%);
+  }
+  #controls.show{display:flex;}
+  .dots{display:flex; gap:6px;}
+  .dot{width:6px; height:6px; border-radius:50%; background:var(--panel-line);}
+  .dot.active{background:var(--gold);}
+  .nav-row{display:flex; align-items:center; gap:14px; width:100%; max-width:360px;}
+  .nav-btn{
+    background:var(--panel); border:1px solid var(--panel-line); color:var(--text);
+    width:36px; height:36px; border-radius:50%; font-size:16px; cursor:pointer; flex:0 0 auto;
+  }
+  #copyBtn{
+    flex:1; background:linear-gradient(90deg, rgba(124,108,255,0.15), rgba(76,211,194,0.15));
+    border:1px solid var(--gold); color:var(--gold); font-family:'Chakra Petch',sans-serif;
+    letter-spacing:0.08em; text-transform:uppercase; font-size:11.5px; padding:10px; border-radius:8px; cursor:pointer;
+  }
+  #toast{
+    position:fixed; bottom:90px; left:50%; transform:translateX(-50%) translateY(20px);
+    background:var(--panel); border:1px solid var(--gold); color:var(--gold);
+    font-family:'Chakra Petch',sans-serif; font-size:11px; letter-spacing:0.08em;
+    padding:8px 16px; border-radius:20px; opacity:0; transition:all .3s ease; z-index:60; pointer-events:none;
+  }
+  #toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
+</style>
+</head>
+<body>
+
+<div id="pbOverlay">
+  <div class="flash" id="flash"></div>
+  <div class="pb-wrap">
+    <div class="pokeball loading" id="pokeball">
+      <div class="pb-top"></div>
+      <div class="pb-band"></div>
+      <div class="pb-bottom"></div>
+      <div class="pb-button"><div class="pb-button-inner"></div></div>
+    </div>
+    <div class="pb-label" id="pbLabel">Reading card…</div>
+    <div class="pb-error" id="pbError">
+      Couldn't load that team automatically — this can happen if the link's host blocks direct requests.
+      <br><button id="pasteInsteadBtn">Paste team text instead</button>
+    </div>
+  </div>
+</div>
+
+<div id="landing">
+  <h2>Load a Team</h2>
+  <p>Paste a Pokémon Showdown / PokePaste export below, or open this page with <code>?paste=&lt;id&gt;</code> in the URL.</p>
+  <textarea id="pasteInput" placeholder="Charizard @ Choice Specs&#10;Ability: Solar Power&#10;..."></textarea>
+  <button id="openBtn">Open Ball</button>
+</div>
+
+<div id="viewer">
+  <div class="track" id="track"></div>
+</div>
+
+<div id="controls">
+  <div class="dots" id="dots"></div>
+  <div class="nav-row">
+    <button class="nav-btn" id="prevBtn">‹</button>
+    <button id="copyBtn">Copy Full Team</button>
+    <button class="nav-btn" id="nextBtn">›</button>
+  </div>
+</div>
+
+<div id="toast">Copied to clipboard</div>
+
+<script>
+/* ============ PARSER (tested standalone) ============ */
+function parsePokePaste(raw) {
+  const blocks = raw.replace(/\r/g, '').split(/\n\s*\n/).map(b => b.trim()).filter(Boolean);
+  return blocks.map(block => {
+    const lines = block.split('\n').map(l => l.trim()).filter(Boolean);
+    const first = lines[0];
+    let namePart = first, item = null;
+    const atSplit = first.split(/\s+@\s+/);
+    if (atSplit.length === 2) { namePart = atSplit[0]; item = atSplit[1].trim(); }
+    let gender = null;
+    namePart = namePart.replace(/\s*\((M|F)\)\s*$/, (m, g) => { gender = g; return ''; }).trim();
+    let nickname = null, species = namePart;
+    const nickMatch = namePart.match(/^(.+?)\s*\(([^)]+)\)$/);
+    if (nickMatch) { nickname = nickMatch[1].trim(); species = nickMatch[2].trim(); }
+
+    const mon = { species, nickname, gender, item, ability: null, level: 50, teraType: null,
+      shiny: false, nature: null, evs: {}, ivs: {}, moves: [] };
+
+    for (let i = 1; i < lines.length; i++) {
+      const line = lines[i];
+      if (/^Ability:/i.test(line)) mon.ability = line.split(':')[1].trim();
+      else if (/^Level:/i.test(line)) mon.level = parseInt(line.split(':')[1].trim(), 10);
+      else if (/^Shiny:/i.test(line)) mon.shiny = /yes/i.test(line.split(':')[1]);
+      else if (/^Tera Type:/i.test(line)) mon.teraType = line.split(':')[1].trim();
+      else if (/^EVs:/i.test(line)) mon.evs = parseSpread(line.slice(4));
+      else if (/^IVs:/i.test(line)) mon.ivs = parseSpread(line.slice(4));
+      else if (/Nature$/i.test(line)) mon.nature = line.replace(/Nature$/i, '').trim();
+      else if (/^-\s*/.test(line)) mon.moves.push(line.replace(/^-\s*/, '').trim());
+    }
+    return mon;
+  });
+}
+function parseSpread(str) {
+  const map = { HP: 'hp', Atk: 'atk', Def: 'def', SpA: 'spa', SpD: 'spd', Spe: 'spe' };
+  const out = {};
+  str.split('/').forEach(part => {
+    const m = part.trim().match(/^(\d+)\s+(\w+)$/);
+    if (m) out[map[m[2]] || m[2].toLowerCase()] = parseInt(m[1], 10);
+  });
+  return out;
+}
+const NATURES = {
+  Hardy:{}, Lonely:{atk:1.1,def:0.9}, Brave:{atk:1.1,spe:0.9}, Adamant:{atk:1.1,spa:0.9}, Naughty:{atk:1.1,spd:0.9},
+  Bold:{def:1.1,atk:0.9}, Docile:{}, Relaxed:{def:1.1,spe:0.9}, Impish:{def:1.1,spa:0.9}, Lax:{def:1.1,spd:0.9},
+  Timid:{spe:1.1,atk:0.9}, Hasty:{spe:1.1,def:0.9}, Serious:{}, Jolly:{spe:1.1,spa:0.9}, Naive:{spe:1.1,spd:0.9},
+  Modest:{spa:1.1,atk:0.9}, Mild:{spa:1.1,def:0.9}, Quiet:{spa:1.1,spe:0.9}, Bashful:{}, Rash:{spa:1.1,spd:0.9},
+  Calm:{spd:1.1,atk:0.9}, Gentle:{spd:1.1,def:0.9}, Sassy:{spd:1.1,spe:0.9}, Careful:{spd:1.1,spa:0.9}, Quirky:{}
+};
+function calcStats(base, mon) {
+  const level = mon.level || 50;
+  const nat = NATURES[mon.nature] || {};
+  const get = (obj, k, d) => (obj && obj[k] !== undefined ? obj[k] : d);
+  const stats = {};
+  ['hp','atk','def','spa','spd','spe'].forEach(k => {
+    const b = base[k];
+    const iv = get(mon.ivs, k, 31);
+    const ev = get(mon.evs, k, 0);
+    if (k === 'hp') stats.hp = Math.floor(((2*b + iv + Math.floor(ev/4)) * level) / 100) + level + 10;
+    else {
+      const raw = Math.floor(((2*b + iv + Math.floor(ev/4)) * level) / 100) + 5;
+      stats[k] = Math.floor(raw * (nat[k] || 1));
+    }
+  });
+  return stats;
+}
+
+/* ============ SPECIES DATA (PokeAPI) ============ */
+const ALIASES = { mimikyu: 'mimikyu-disguised' };
+function slugify(name){
+  return name.toLowerCase().replace(/['.]/g,'').trim().replace(/\s+/g,'-').replace(/[^a-z0-9-]/g,'');
+}
+let networkIssueDetected = false;
+const speciesCache = new Map();
+async function getSpeciesData(name, item){
+  const key = name.toLowerCase() + '|' + (item||'');
+  if (speciesCache.has(key)) return speciesCache.get(key);
+  const baseSlug = ALIASES[slugify(name)] || slugify(name);
+  const looksLikeMegaStone = item && /ite$/i.test(item.replace(/\s+/g,''));
+
+  let data = null;
+  if (looksLikeMegaStone) data = await tryFetchPokemon(baseSlug + '-mega');
+  if (!data) data = await tryFetchPokemon(baseSlug);
+  if (!data) {
+    try {
+      const sres = await fetch(`https://pokeapi.co/api/v2/pokemon-species/${baseSlug}`);
+      if (sres.ok) {
+        const sjson = await sres.json();
+        const def = (sjson.varieties.find(v => v.is_default) || sjson.varieties[0]);
+        data = await tryFetchPokemon(def.pokemon.name);
+      }
+    } catch(e){ networkIssueDetected = true; }
+  }
+  const result = data ? {
+    types: data.types.map(t => t.type.name),
+    base: Object.fromEntries(data.stats.map(s => [
+      ({'hp':'hp','attack':'atk','defense':'def','special-attack':'spa','special-defense':'spd','speed':'spe'})[s.stat.name],
+      s.base_stat
+    ])),
+    sprite: data.sprites?.other?.['official-artwork']?.front_default || data.sprites?.front_default,
+    spriteShiny: data.sprites?.other?.['official-artwork']?.front_shiny || data.sprites?.front_shiny
+  } : null;
+  speciesCache.set(key, result);
+  return result;
+}
+async function tryFetchPokemon(slug){
+  try {
+    const r = await fetch(`https://pokeapi.co/api/v2/pokemon/${slug}`);
+    if (r.ok) return await r.json();
+  } catch(e){ networkIssueDetected = true; }
+  return null;
+}
+
+/* ============ POKEPASTE FETCH (with CORS fallback) ============ */
+async function fetchPasteRaw(id){
+  const direct = `https://pokepast.es/${id}/raw`;
+  try { const r = await fetch(direct); if (r.ok) return await r.text(); } catch(e){}
+  try {
+    const proxied = `https://api.allorigins.win/raw?url=${encodeURIComponent(direct)}`;
+    const r2 = await fetch(proxied); if (r2.ok) return await r2.text();
+  } catch(e){}
+  throw new Error('fetch-failed');
+}
+
+/* ============ RENDERING ============ */
+let currentTeam = [];
+let currentIndex = 0;
+let rawTextForCopy = '';
+
+function typeClass(t){ return 'type ' + t; }
+
+function statLabel(k){ return ({hp:'HP',atk:'ATK',def:'DEF',spa:'SPA',spd:'SPD',spe:'SPE'})[k]; }
+
+function buildCardHTML(mon, species, idx, total){
+  const sprite = (mon.shiny && species.spriteShiny) ? species.spriteShiny : species.sprite;
+  const stats = calcStats(species.base, mon);
+  const maxStat = 180;
+  const typesHTML = species.types.map(t => `<span class="${typeClass(t)}">${t}</span>`).join('');
+  const statsHTML = ['hp','atk','def','spa','spd','spe'].map(k => `
+    <div class="stat-line">
+      <span class="stat-label">${statLabel(k)}</span>
+      <div class="bar-bg"><div class="bar-fill" style="width:${Math.min(100, stats[k]/maxStat*100)}%"></div></div>
+      <span class="stat-val">${stats[k]}</span>
+    </div>`).join('');
+  const movesHTML = mon.moves.map(m => `<div class="move-chip">${m}</div>`).join('');
+  const metaBits = [];
+  if (mon.item) metaBits.push(`<span><b>${mon.item}</b></span>`);
+  if (mon.ability) metaBits.push(`<span>Ability: <b>${mon.ability}</b></span>`);
+  if (mon.nature) metaBits.push(`<span><b>${mon.nature}</b> Nature</span>`);
+  if (mon.teraType) metaBits.push(`<span>Tera: <b>${mon.teraType}</b></span>`);
+  const evEntries = Object.entries(mon.evs).filter(([,v]) => v > 0);
+  const evStr = evEntries.length ? evEntries.map(([k,v]) => `${v} ${statLabel(k)}`).join(' / ') : null;
+  if (evStr) metaBits.push(`<span>EVs: <b>${evStr}</b></span>`);
+
+  return `
+    <div class="top-row">
+      <span class="slot-pill">MON ${idx+1} / ${total}</span>
+      ${mon.shiny ? '<span class="shiny-pill">✦ SHINY</span>' : ''}
+    </div>
+    <div class="sprite-stage">
+      ${mon.shiny ? '<div class="foil"></div>' : ''}
+      <img src="${sprite}" alt="${mon.species} sprite">
+    </div>
+    <h1 class="mon-name">${mon.nickname ? mon.nickname : mon.species}</h1>
+    ${mon.nickname ? `<p class="nickname">${mon.species}</p>` : ''}
+    <div class="types">${typesHTML}</div>
+    <div class="meta-row">${metaBits.join('')}</div>
+    ${statsHTML}
+    <div class="moves-title">Moves</div>
+    <div class="moves-grid">${movesHTML}</div>
+  `;
+}
+
+async function renderTeam(team, raw){
+  currentTeam = team;
+  rawTextForCopy = raw;
+  const track = document.getElementById('track');
+  const dots = document.getElementById('dots');
+  track.innerHTML = '';
+  dots.innerHTML = '';
+
+  for (let i = 0; i < team.length; i++) {
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.dataset.index = i;
+    card.innerHTML = '<p style="color:var(--muted);font-size:12px;">Loading species data…</p>';
+    track.appendChild(card);
+
+    const dot = document.createElement('div');
+    dot.className = 'dot' + (i === 0 ? ' active' : '');
+    dots.appendChild(dot);
+  }
+
+  for (let i = 0; i < team.length; i++) {
+    const species = await getSpeciesData(team[i].species, team[i].item);
+    const card = track.children[i];
+    if (!species) {
+      card.innerHTML = networkIssueDetected
+        ? `<p style="color:var(--muted);font-size:12px;line-height:1.6;">Couldn't reach PokeAPI from here. If you're viewing this inside Claude's chat preview, that sandbox blocks outside network calls — download this file and open it directly in Safari/Chrome instead.</p>`
+        : `<p style="color:var(--muted);font-size:12px;">Couldn't find species data for "${team[i].species}".</p>`;
+      continue;
+    }
+    card.innerHTML = buildCardHTML(team[i], species, i, team.length);
+  }
+
+  document.getElementById('controls').classList.add('show');
+  goToCard(0);
+}
+
+function goToCard(i){
+  const track = document.getElementById('track');
+  currentIndex = Math.max(0, Math.min(currentTeam.length - 1, i));
+  track.style.transform = `translateX(-${currentIndex * 100}%)`;
+  document.querySelectorAll('.dot').forEach((d, idx) => d.classList.toggle('active', idx === currentIndex));
+}
+
+/* ============ SWIPE HANDLING ============ */
+(function setupSwipe(){
+  const viewer = document.getElementById('viewer');
+  let startX = 0, dragging = false;
+  viewer.addEventListener('touchstart', e => { startX = e.touches[0].clientX; dragging = true; }, {passive:true});
+  viewer.addEventListener('touchend', e => {
+    if (!dragging) return;
+    dragging = false;
+    const dx = e.changedTouches[0].clientX - startX;
+    if (dx > 50) goToCard(currentIndex - 1);
+    else if (dx < -50) goToCard(currentIndex + 1);
+  }, {passive:true});
+})();
+document.getElementById('prevBtn').onclick = () => goToCard(currentIndex - 1);
+document.getElementById('nextBtn').onclick = () => goToCard(currentIndex + 1);
+
+document.getElementById('copyBtn').onclick = async () => {
+  try {
+    await navigator.clipboard.writeText(rawTextForCopy);
+  } catch(e){
+    const ta = document.createElement('textarea');
+    ta.value = rawTextForCopy; document.body.appendChild(ta); ta.select();
+    document.execCommand('copy'); document.body.removeChild(ta);
+  }
+  const toast = document.getElementById('toast');
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 1600);
+};
+
+/* ============ POKEBALL SEQUENCE ============ */
+function openBallWith(team, raw){
+  const overlay = document.getElementById('pbOverlay');
+  const ball = document.getElementById('pokeball');
+  const flash = document.getElementById('flash');
+  renderTeam(team, raw).then(() => {
+    document.getElementById('viewer').classList.add('show');
+    ball.classList.remove('shaking');
+    ball.classList.add('release');
+    flash.classList.add('go');
+    setTimeout(() => overlay.classList.add('hidden'), 350);
+  });
+}
+
+async function boot(){
+  const params = new URLSearchParams(location.search);
+  const pasteId = params.get('paste') || params.get('id');
+  const ball = document.getElementById('pokeball');
+  const label = document.getElementById('pbLabel');
+
+  if (!pasteId) {
+    document.getElementById('pbOverlay').classList.add('hidden');
+    document.getElementById('landing').classList.add('show');
+    return;
+  }
+
+  ball.classList.add('shaking');
+  label.textContent = 'Reading card…';
+  const started = Date.now();
+  try {
+    const raw = await fetchPasteRaw(pasteId);
+    const team = parsePokePaste(raw);
+    const elapsed = Date.now() - started;
+    setTimeout(() => openBallWith(team, raw), Math.max(0, 700 - elapsed));
+  } catch(e){
+    ball.classList.remove('shaking');
+    label.textContent = 'Load failed';
+    document.getElementById('pbError').classList.add('show');
+  }
+}
+
+document.getElementById('pasteInsteadBtn').onclick = () => {
+  document.getElementById('pbOverlay').classList.add('hidden');
+  document.getElementById('landing').classList.add('show');
+};
+document.getElementById('openBtn').onclick = () => {
+  const raw = document.getElementById('pasteInput').value.trim();
+  if (!raw) return;
+  const team = parsePokePaste(raw);
+  document.getElementById('landing').classList.remove('show');
+  const overlay = document.getElementById('pbOverlay');
+  const ball = document.getElementById('pokeball');
+  overlay.classList.remove('hidden');
+  ball.classList.add('shaking');
+  document.getElementById('pbLabel').textContent = 'Reading card…';
+  setTimeout(() => openBallWith(team, raw), 700);
+};
+
+boot();
+</script>
+</body>
+</html>
